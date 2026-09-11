@@ -87,62 +87,78 @@ for i, chunk in enumerate(chunks):
 # STEP 5: Connect to ChromaDB
 # ============================================
 
-# Create a local ChromaDB database.
-# The database will be saved in the "chroma_db" folder.
+# Create/connect to our local ChromaDB database.
+# The database is stored in the "chroma_db" folder.
 client = chromadb.PersistentClient(path="./chroma_db")
-
-# Create or open our collection.
-collection = client.get_or_create_collection(
-    name="documents"
-)
 
 
 # ============================================
-# STEP 6: Store chunks and embeddings
+# STEP 6: Create a fresh collection
+# ============================================
+
+# Delete the old collection if it already exists.
+# This makes ingest.py safe to run again.
+try:
+    client.delete_collection(name="documents")
+    print("\nOld collection deleted.")
+except Exception:
+    # If the collection doesn't exist yet,
+    # there is nothing to delete.
+    print("\nNo existing collection found.")
+
+
+# Create a fresh collection for our document.
+collection = client.create_collection(
+    name="documents"
+)
+# Check how many collections actually exist
+print("Number of collections:", client.count_collections())
+
+# Show the collection names
+print("Collections:", client.list_collections())
+
+# ============================================
+# STEP 7: Store chunks and embeddings
 # ============================================
 
 # Create a unique ID for every chunk.
-# Example: chunk_0, chunk_1, chunk_2...
+# Example:
+# chunk_0, chunk_1, chunk_2...
 ids = [f"chunk_{i}" for i in range(len(chunks))]
 
-# Add our data to ChromaDB.
-# Each chunk is stored together with:
-# 1. Its unique ID
-# 2. Its embedding vector
-# 3. Its original text
+# Store the IDs, embeddings, and original text
+# together in ChromaDB.
 collection.add(
     ids=ids,
     embeddings=embeddings,
     documents=chunks
 )
 
+
 # ============================================
-# STEP 7: Verify the stored data
+# STEP 8: Verify the stored data
 # ============================================
 
 print("\n================================")
 print("ChromaDB Results")
 print("================================")
 
-# Check how many records are stored
+# Check how many records are stored.
 print("Number of records:", collection.count())
 
-# Retrieve documents AND their embeddings
+# Retrieve documents and embeddings
+# so we can verify that they were stored.
 stored_data = collection.get(
     include=["documents", "embeddings"]
 )
 
-# Show the IDs stored in ChromaDB
 print("Stored IDs:", stored_data["ids"])
 
-# Show the first stored document
 print("\nFirst stored document:")
 print(stored_data["documents"][0])
 
-# Show the size of the first stored embedding
 print("\nFirst embedding length:")
 print(len(stored_data["embeddings"][0]))
 
-# Show only the first 5 numbers of the embedding
 print("\nFirst 5 values of first embedding:")
 print(stored_data["embeddings"][0][:5])
