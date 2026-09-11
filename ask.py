@@ -11,18 +11,17 @@ import chromadb
 # ============================================
 
 # Connect to the local ChromaDB database
-# that we created during ingestion.
 client = chromadb.PersistentClient(path="./chroma_db")
 
-# Open the same collection where our
-# document chunks and embeddings are stored.
+# Open the collection containing our document
+# chunks and their embeddings
 collection = client.get_collection(
     name="documents"
 )
 
 
 # ============================================
-# STEP 3: Define the user's question
+# STEP 3: Get the user's question
 # ============================================
 
 question = "Why are silicon spin qubits suitable for commercial scalability?"
@@ -34,25 +33,25 @@ print("Question:", question)
 # STEP 4: Convert the question into an embedding
 # ============================================
 
-# We use the SAME embedding model that we used
-# when storing our document chunks.
+# Use the SAME embedding model that we used
+# during ingestion.
 response = ollama.embed(
     model="embeddinggemma:latest",
     input=question
 )
 
-# Get the question's 768-dimensional vector
+# Extract the question's vector
 question_embedding = response.embeddings[0]
 
 print("\nQuestion embedding length:", len(question_embedding))
 
 
 # ============================================
-# STEP 5: Search ChromaDB
+# STEP 5: Retrieve relevant chunks
 # ============================================
 
-# Ask ChromaDB to find the 2 chunks that are
-# most similar to our question.
+# Search ChromaDB for the 2 chunks that are
+# most similar to the question.
 results = collection.query(
     query_embeddings=[question_embedding],
     n_results=2
@@ -60,17 +59,88 @@ results = collection.query(
 
 
 # ============================================
-# STEP 6: Display the retrieved chunks
+# STEP 6: Extract the retrieved text
 # ============================================
+
+# results["documents"][0] contains the documents
+# retrieved for our question.
+retrieved_chunks = results["documents"][0]
 
 print("\n================================")
 print("Retrieved Chunks")
 print("================================")
 
-for i, document in enumerate(results["documents"][0]):
+for i, document in enumerate(retrieved_chunks):
 
     print(f"\n--- Result {i} ---")
     print(document)
 
-    # ChromaDB also gives us a distance score.
     print("Distance:", results["distances"][0][i])
+
+
+# ============================================
+# STEP 7: Combine retrieved chunks into context
+# ============================================
+
+# Join the retrieved chunks together.
+# This will become the context given to the LLM.
+context = "\n\n".join(retrieved_chunks)
+
+
+# ============================================
+# STEP 8: Create the RAG prompt
+# ============================================
+
+# We tell the LLM to answer using the retrieved
+# information as its context.
+prompt = f"""
+Answer the question using only the context provided below.
+
+Context:
+{context}
+
+Question:
+{question}
+
+Answer:
+"""
+
+
+# ============================================
+# STEP 9: Display the prompt
+# ============================================
+
+# Print the actual prompt so we can see exactly
+# what information is being sent to the LLM.
+print("\n================================")
+print("Prompt Sent to LLM")
+print("================================")
+print(prompt)
+
+
+# ============================================
+# STEP 10: Generate the answer
+# ============================================
+
+# Send the prompt to our local Gemma 3 LLM.
+response = ollama.chat(
+    model="gemma3:4b",
+    messages=[
+        {
+            "role": "user",
+            "content": prompt
+        }
+    ]
+)
+
+
+# ============================================
+# STEP 11: Display the final answer
+# ============================================
+
+answer = response.message.content
+
+print("\n================================")
+print("Final Answer")
+print("================================")
+print(answer)
