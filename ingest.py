@@ -116,7 +116,6 @@ collection.add(
     documents=chunks
 )
 
-
 # ============================================
 # STEP 7: Verify the stored data
 # ============================================
@@ -128,13 +127,22 @@ print("================================")
 # Check how many records are stored
 print("Number of records:", collection.count())
 
-# Retrieve everything from the collection
-stored_data = collection.get()
+# Retrieve documents AND their embeddings
+stored_data = collection.get(
+    include=["documents", "embeddings"]
+)
 
+# Show the IDs stored in ChromaDB
 print("Stored IDs:", stored_data["ids"])
 
+# Show the first stored document
 print("\nFirst stored document:")
 print(stored_data["documents"][0])
 
+# Show the size of the first stored embedding
 print("\nFirst embedding length:")
 print(len(stored_data["embeddings"][0]))
+
+# Show only the first 5 numbers of the embedding
+print("\nFirst 5 values of first embedding:")
+print(stored_data["embeddings"][0][:5])
