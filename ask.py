@@ -24,7 +24,8 @@ collection = client.get_collection(
 # STEP 3: Get the user's question
 # ============================================
 
-question = "Why are silicon spin qubits suitable for commercial scalability?"
+# question = "Why are silicon spin qubits suitable for commercial scalability?"
+question = "Why is the Surface Code important in quantum computing?"
 
 print("Question:", question)
 
@@ -54,7 +55,7 @@ print("\nQuestion embedding length:", len(question_embedding))
 # most similar to the question.
 results = collection.query(
     query_embeddings=[question_embedding],
-    n_results=2
+    n_results=3
 )
 
 
