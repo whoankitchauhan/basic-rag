@@ -5,6 +5,8 @@
 from pypdf import PdfReader
 import ollama
 import chromadb
+import shutil
+import os
 
 
 # ============================================
@@ -83,39 +85,37 @@ for i, chunk in enumerate(chunks):
     embeddings.append(vector)
 
 
-# ============================================
-# STEP 5: Connect to ChromaDB
-# ============================================
 
-# Create/connect to our local ChromaDB database.
-# The database is stored in the "chroma_db" folder.
-client = chromadb.PersistentClient(path="./chroma_db")
 
 
 # ============================================
-# STEP 6: Create a fresh collection
+# STEP 5: Create a fresh ChromaDB database
 # ============================================
 
-# Delete the old collection if it already exists.
-# This makes ingest.py safe to run again.
-try:
-    client.delete_collection(name="documents")
-    print("\nOld collection deleted.")
-except Exception:
-    # If the collection doesn't exist yet,
-    # there is nothing to delete.
-    print("\nNo existing collection found.")
+# Path where our ChromaDB database is stored
+db_path = "./chroma_db"
 
+# If an old database already exists,
+# completely remove it.
+if os.path.exists(db_path):
+    shutil.rmtree(db_path)
+    print("\nOld ChromaDB database deleted.")
 
-# Create a fresh collection for our document.
+# Create a completely fresh ChromaDB database
+client = chromadb.PersistentClient(path=db_path)
+
+print("Fresh ChromaDB database created.")
+
+# ============================================
+# STEP 6: Create ChromaDB collection
+# ============================================
+
+# Create a fresh collection for our document
 collection = client.create_collection(
     name="documents"
 )
-# Check how many collections actually exist
-print("Number of collections:", client.count_collections())
 
-# Show the collection names
-print("Collections:", client.list_collections())
+print("Collection created:", collection.name)
 
 # ============================================
 # STEP 7: Store chunks and embeddings
